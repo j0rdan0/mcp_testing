@@ -31,12 +31,15 @@ class OpenAIChatClient:
         await self.register_tools()
     async def cleanup(self):
         await self.mcp_client.cleanup()
+        # TODO: this is where the tools config should go, for dynamic usage
     async def chat(self, user_message):
         messages = [self.system_message] + self.history + [{"role": "user", "content": user_message}]
         try: 
             response = self.openai.chat.completions.create(
                 model="gpt-5",
                 messages=messages,
+                reasoning={"effort": "low"},
+                text={ "verbosity": "low" },
                 tools=self.openai_functions if self.openai_functions else None,
                 tool_choice="auto" if self.openai_functions else None
             )
@@ -61,12 +64,11 @@ class OpenAIChatClient:
                     "tool_call_id": tool_call.id,
                     "content": tool_result
                 })
-                
                 # Get final response with tool result
                 final_response = self.openai.chat.completions.create(
                     model="gpt-5",
                     messages=messages,
-                   # max_completion_tokens=1000
+                    reasoning={"effort": "low"}
                 )
                 # extend history
                 self.history.extend([
@@ -115,6 +117,8 @@ class OpenAIChatClient:
     }
     async def register_tools(self): 
         try:
+            if not self.config_list: 
+                return 
             for config in self.config_list:
                 mcp_session = await self.mcp_client.connect_local_server(config)
                 result = await mcp_session.list_tools()
