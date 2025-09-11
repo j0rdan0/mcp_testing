@@ -5,17 +5,18 @@ import mcp_client
 import asyncio
 import json
 
+
 class OpenAIChatClient:
     def __init__(self, config):
         self.openai = OpenAI()
         self.system_message = {
             "role": "system",
-            "content": """You are a helpful assistant with access to various tools through MCP (Model Context Protocol). 
-            You can automatically use available tools when needed to answer user questions. 
+            "content": """You are a helpful assistant with access to various tools through MCP (Model Context Protocol).
+            You can automatically use available tools when needed to answer user questions.
             When a user asks about time, dates, or related queries, check if you have appropriate tools available and use them.
             Always use the available tools to provide real, current data rather than giving generic responses.
             Never tell users to visit GitHub manually when you have tools to fetch the information directly.
-            Always try to call the relevant GitHub tool instead of refusing. 
+            Always try to call the relevant GitHub tool instead of refusing.
             For example, if a user asks to list repositories, call `search_repositories` with a query like 'user:<username>'.
             Always provide helpful, accurate responses using the most current information from your tools."""
         }
@@ -29,101 +30,95 @@ class OpenAIChatClient:
     async def initialize(self):
         """Initialize the client - must be called after __init__"""
         await self.register_tools()
+
     async def cleanup(self):
         await self.mcp_client.cleanup()
         # TODO: this is where the tools config should go, for dynamic usage
-    async def chat(self, user_message):
-        messages = [self.system_message] + self.history + [{"role": "user", "content": user_message}]
-        try: 
-            response = self.openai.chat.completions.create(
-                model="gpt-5",
-                messages=messages,
-                reasoning={"effort": "low"},
-                text={ "verbosity": "low" },
-                tools=self.openai_functions if self.openai_functions else None,
-                tool_choice="auto" if self.openai_functions else None
-            )
-            message = response.choices[0].message
-            if message.tool_calls:
-                tool_call = message.tool_calls[0]
-                function_name = tool_call.function.name
-                function_args = json.loads(tool_call.function.arguments or "{}")
 
-                print(f"[*] Calling {function_name}")
-                tool_result = await self.execute_tool(function_name, function_args)
-                
-                messages.append({
-                    "role": "assistant",
-                    "content": message.content,
-                    "tool_calls": message.tool_calls
-                })
-                
-                # Add tool result to messages
-                messages.append({
-                    "role": "tool",
-                    "tool_call_id": tool_call.id,
-                    "content": tool_result
-                })
-                # Get final response with tool result
-                final_response = self.openai.chat.completions.create(
-                    model="gpt-5",
-                    messages=messages,
-                    reasoning={"effort": "low"}
-                )
-                # extend history
-                self.history.extend([
-                    {"role": "user", "content": user_message},
-                    {
-                        "role": "assistant", 
-                        "content": message.content,
-                        "tool_calls": message.tool_calls
-                    },
-                    {
-                        "role": "tool",
-                        "tool_call_id": tool_call.id,
-                        "content": tool_result
-                    },
-                    {"role": "assistant", "content": final_response.choices[0].message.content}
-                ])
-                
-                return final_response.choices[0].message.content
+    async def chat(self, user_message):
+        try:
+            context =  [{"role": "user", "content": user_message}]
+               
+            response = self.openai.responses.create(
+                model="gpt-5",
+                instructions=self.system_message["content"],
+                tools=self.openai_functions if self.openai_functions else None,
+                tool_choice="auto" if self.openai_functions else None,
+                reasoning={"effort": "low"},
+                input=context
+            )
+            message = response.output_text
+            context += response.output
+
+            for item in response.output:
+                if item.type == "function_call":
+                    function_name = item.name
+                    function_args = json.loads(item.arguments or "{}")
+
+                    print(f"[*] Calling {function_name} with {function_args}")
+
+                    tool_result = await self.execute_tool(function_name, function_args)
+                    
+                    context.append({
+                                "type": "function_call_output",
+                                "call_id": item.call_id,
+                                "output": json.dumps({
+                                "tool_result": tool_result
+                                })}
+                    )
+                                             
+                        
+                    final_response = self.openai.responses.create(
+                        model="gpt-5",
+                       # previous_response_id=response.id,
+                        input=context
+                        )
+                    final_text = final_response.output_text
+               
+                   
+                    return final_text
+                else:
+                    # No tools, just text
+                    final_response = message
             
-            else:
-                self.history.extend([
-                    {"role": "user", "content": user_message},
-                    {"role": "assistant", "content": message.content}
-                ])
-                return message.content
+
+            return final_response
 
         except Exception as e:
-            print(f"error while communicating with GPT-5: {e}")   
+            print(f"error while communicating with GPT-5: {e}")
             return "Something went wrong."
+    
+
     def mcp_tool_to_openai_function(self, mcp_tool):
         return {
-        "type": "function",
-        "function": {
-            "name": mcp_tool.name,
-            "description": mcp_tool.description or f"Execute {mcp_tool.name} tool",
+            "type":"function",
+            "name":mcp_tool.name,
+            "description": (
+                mcp_tool.description
+                or f"Use this tool to execute {mcp_tool.name}."
+            ),
             "parameters": (
                 mcp_tool.inputSchema
-                if hasattr(mcp_tool, "inputSchema") and mcp_tool.inputSchema
+                if hasattr(mcp_tool, "inputSchema") and isinstance(mcp_tool.inputSchema, dict)
                 else {
                     "type": "object",
                     "properties": {},
                     "required": []
                 }
             )
+            
         }
-    }
-    async def register_tools(self): 
+    
+
+    async def register_tools(self):
         try:
-            if not self.config_list: 
-                return 
+            if not self.config_list:
+                return
             for config in self.config_list:
                 mcp_session = await self.mcp_client.connect_local_server(config)
                 result = await mcp_session.list_tools()
                 tools = result.tools if hasattr(result, 'tools') else []
-                
+
                 for tool in tools:
                     self.available_tools[tool.name] = tool
                     self.mcp_sessions[tool.name] = mcp_session
@@ -132,6 +127,7 @@ class OpenAIChatClient:
                     print(f"[*] Registered {tool.name}")
         except Exception as e:
             print(f"Error registering tool: {e}")
+
     async def execute_tool(self, tool_name, arguments):
         try:
             print(f"[*] Executing {tool_name} with args {arguments}")
@@ -149,5 +145,3 @@ class OpenAIChatClient:
         except Exception as e:
             print(f"Error executing tool: {e}")
             return f"Execution error: {e}"
-        
-        
