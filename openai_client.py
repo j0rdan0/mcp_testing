@@ -5,7 +5,6 @@ import mcp_client
 import asyncio
 import json
 
-
 class OpenAIChatClient:
     def __init__(self, config):
         self.openai = OpenAI()
@@ -20,7 +19,7 @@ class OpenAIChatClient:
             For example, if a user asks to list repositories, call `search_repositories` with a query like 'user:<username>'.
             Always provide helpful, accurate responses using the most current information from your tools."""
         }
-        self.history = []
+        
         self.available_tools = {}              # name → MCP tool
         self.openai_functions = []             # converted MCP tools → OpenAI tool schema
         self.mcp_sessions = {}                 # tool name → session
@@ -33,22 +32,21 @@ class OpenAIChatClient:
 
     async def cleanup(self):
         await self.mcp_client.cleanup()
+        
         # TODO: this is where the tools config should go, for dynamic usage
-
     async def chat(self, user_message):
         try:
-            context =  [{"role": "user", "content": user_message}]
-               
+            input_list = [{"role": "user", "content": user_message}]
+
             response = self.openai.responses.create(
                 model="gpt-5",
                 instructions=self.system_message["content"],
                 tools=self.openai_functions if self.openai_functions else None,
                 tool_choice="auto" if self.openai_functions else None,
                 reasoning={"effort": "low"},
-                input=context
+                input=input_list
             )
-            message = response.output_text
-            context += response.output
+            input_list += response.output  
 
             for item in response.output:
                 if item.type == "function_call":
@@ -58,41 +56,36 @@ class OpenAIChatClient:
                     print(f"[*] Calling {function_name} with {function_args}")
 
                     tool_result = await self.execute_tool(function_name, function_args)
-                    
-                    context.append({
-                                "type": "function_call_output",
+
+                    input_list.append({
+                        "type": "function_call_output",
                                 "call_id": item.call_id,
                                 "output": json.dumps({
-                                "tool_result": tool_result
+                                    "tool_result": tool_result
                                 })}
                     )
-                                             
-                        
                     final_response = self.openai.responses.create(
                         model="gpt-5",
-                       # previous_response_id=response.id,
-                        input=context
-                        )
+                        reasoning={"effort": "low"},
+                        input=input_list
+                    )
                     final_text = final_response.output_text
-               
-                   
+
                     return final_text
-                else:
+                elif item.type == "message":
                     # No tools, just text
-                    final_response = message
-            
+                    final_response = response.output_text
 
             return final_response
 
         except Exception as e:
-            print(f"error while communicating with GPT-5: {e}")
-            return "Something went wrong."
-    
+            print(f"Error while communicating with GPT-5: {e}")
+            return "Something went wrong"
 
     def mcp_tool_to_openai_function(self, mcp_tool):
         return {
-            "type":"function",
-            "name":mcp_tool.name,
+            "type": "function",
+            "name": mcp_tool.name,
             "description": (
                 mcp_tool.description
                 or f"Use this tool to execute {mcp_tool.name}."
@@ -106,9 +99,8 @@ class OpenAIChatClient:
                     "required": []
                 }
             )
-            
+
         }
-    
 
     async def register_tools(self):
         try:
