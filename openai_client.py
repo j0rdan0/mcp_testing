@@ -4,6 +4,7 @@ from openai import OpenAI
 import mcp_client
 import asyncio
 import json
+from config_loader import load_tools_config
 
 class OpenAIChatClient:
     def __init__(self, config):
@@ -33,7 +34,8 @@ class OpenAIChatClient:
     async def cleanup(self):
         await self.mcp_client.cleanup()
         
-        # TODO: this is where the tools config should go, for dynamic usage
+        # TODO: this is where the tools config should go, for dynamic usage (and use kafka to fetch the configs)
+        # as the tools apparently are sent with the system prompt, registering all of them at once increases the context window
     async def chat(self, user_message):
         try:
             input_list = [{"role": "user", "content": user_message}]
@@ -137,3 +139,22 @@ class OpenAIChatClient:
         except Exception as e:
             print(f"Error executing tool: {e}")
             return f"Execution error: {e}"
+        
+    async def reload_tools(self):
+        for session in self.mcp_sessions.values():
+                try:
+                    await session.cleanup()
+                except:
+                    pass
+        # clear existing tool lists     
+        self.available_tools.clear()
+        self.openai_functions.clear()
+        self.mcp_sessions.clear()
+        
+        new_config = load_tools_config() # tbi
+        if new_config:
+            self.config_list = new_config
+            await self.register_tools()
+            print("[*] Reloaded tools")
+            
+        

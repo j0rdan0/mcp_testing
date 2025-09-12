@@ -1,0 +1,20 @@
+{
+    "tools" : [
+    {
+    "name": "time_server",
+    "command": "uvx",
+    "args":["mcp-server-time"],
+    "env": null,
+    "enabled": true
+},
+{
+    "name": "github_server",
+    "command": "/Users/j0rdan0/mcp-servers/github-mcp-server/main",
+    "args": ["stdio"],
+    "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
+    },
+    "enabled": true
+}
+    ]
+}

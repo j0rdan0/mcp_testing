@@ -17,6 +17,11 @@ class Chat:
                     break
                 if not msg:
                     continue
+                # add handing of config reload
+                
+                if msg == "/reload":
+                    await self.client.reload_tools()
+                    continue
                 response = await self.client.chat(msg)
                 cprint("system>","blue",end="")
                 print(response)
