@@ -8,6 +8,9 @@ class Chat:
         self.client = OpenAIChatClient(config)
     async def run_chat(self):
         await self.client.initialize()
+        print("Available commands:")
+        print("/reload - reload MCP tools configuration")
+        print("/tools - list loaded MCP tools")
         while True:
             try:
                 cprint("user>","red",end="")
@@ -18,9 +21,13 @@ class Chat:
                 if not msg:
                     continue
                 # add handing of config reload
-                
                 if msg == "/reload":
                     await self.client.reload_tools()
+                    continue
+                # list tools
+                if msg == "/tools":
+                    for tool in self.client.openai_functions:
+                        print(f"[*] Registered {tool["name"]}")
                     continue
                 response = await self.client.chat(msg)
                 cprint("system>","blue",end="")

@@ -5,6 +5,7 @@ import mcp_client
 import asyncio
 import json
 from config_loader import load_tools_config
+import inspect
 
 class OpenAIChatClient:
     def __init__(self, config):
@@ -105,6 +106,11 @@ class OpenAIChatClient:
         }
 
     async def register_tools(self):
+        verbose = True
+        frame_info = inspect.stack()
+        if frame_info[1].function == "initialize":
+            verbose = False
+            
         try:
             if not self.config_list:
                 return
@@ -118,7 +124,8 @@ class OpenAIChatClient:
                     self.mcp_sessions[tool.name] = mcp_session
                     openai_function = self.mcp_tool_to_openai_function(tool)
                     self.openai_functions.append(openai_function)
-                    print(f"[*] Registered {tool.name}")
+                    if verbose:
+                        print(f"[*] Registered {tool.name}")
         except Exception as e:
             print(f"Error registering tool: {e}")
 
