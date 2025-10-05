@@ -1,20 +1,18 @@
 #!/usr/bin/env python3
 
 import asyncio
-import mcp_client
 from interactive_chat import Chat
 from dotenv import load_dotenv
-import sys
-from config_loader import load_tools_config
+from interactive_agent import InteractiveAgent
+from aux import parse_args
 
 load_dotenv()
 
 async def main():
-    config_list =  None
-    if len(sys.argv) > 1 and (sys.argv[1] == "--with-tools" or sys.argv[1] == "-tools"):
-        config_list = load_tools_config()
-    chat =  Chat(config_list)
-    await chat.run_chat() 
+    args = parse_args()
+    agent = InteractiveAgent(args.enhanced)
+    await agent.initialize()
+    await agent.run_chat()
     
 if __name__ == "__main__":
     asyncio.run(main())
