@@ -8,3 +8,8 @@ wheels/
 
 # Virtual environments
 .venv
+
+# some other shit
+.env
+.python-version
+.vscode/*
