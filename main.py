@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import asyncio
-from interactive_chat import Chat
 from dotenv import load_dotenv
 from interactive_agent import InteractiveAgent
 from aux import parse_args
@@ -10,7 +9,7 @@ load_dotenv()
 
 async def main():
     args = parse_args()
-    agent = InteractiveAgent(args.enhanced)
+    agent = InteractiveAgent(enhanced=args.enhanced)
     await agent.initialize()
     await agent.run_chat()
     

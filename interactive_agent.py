@@ -9,10 +9,7 @@ from aux import print_banner
 class InteractiveAgent:
     def __init__(self,enhanced=False):
         self.client = PinkAgent()
-        if enhanced:
-            self.mcp_servers= load_config()
-        else:
-            self.mcp_servers = []
+        self.mcp_servers= load_config() if enhanced else []
         self.logger = logging.Logger(__name__)
     async def initialize(self):
         if self.mcp_servers:

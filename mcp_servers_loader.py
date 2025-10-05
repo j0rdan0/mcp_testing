@@ -6,7 +6,7 @@ import logging
 import os
 
 config_file = "mcp-servers.json"
-logger = logging.Logger("debug")
+logger = logging.Logger(__name__)
 
 def load_config():
     mcp_servers  = [] # list of MCPServerStdio
