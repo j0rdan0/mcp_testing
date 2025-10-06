@@ -58,13 +58,7 @@ class PinkAgent:
         
     async def reload_mcp_servers(self,config):
         if self.mcp_servers:
-            for server in self.mcp_servers:
-                try:
-                    await server.__aexit__(None,None,None)
-                except asyncio.CancelledError:
-                    self.logger.info("[*]MCP cleanup interrupted (normal during shutdown)")
-                except Exception as e:
-                    self.logger.error(f"[*]MCP cleanup error: {e}")
+            self._close_mcp_servers()
         reloaded_servers = config
         if not reloaded_servers:
             print("[*]No MCP servers found in config.")
@@ -86,16 +80,20 @@ class PinkAgent:
         if self.session:
             self.session.close()
         if self.mcp_servers:
-            for server in self.mcp_servers:
-                try:
-                    await server.__aexit__(None,None,None)
-                except asyncio.CancelledError:
-                    self.logger.info("[*]MCP cleanup interrupted (normal during shutdown)")
-                except Exception as e:
-                    self.logger.error(f"[*]MCP cleanup error: {e}")
+            self._close_mcp_servers()
         if self.session_filepath:
             time.sleep(0.2)
             os.unlink(self.session_filepath)
+            
+    async def _close_mcp_servers(self):
+        for server in self.mcp_servers:
+            try:
+                await server.__aexit__(None, None, None)
+            except asyncio.CancelledError:
+                self.logger.info("MCP cleanup interrupted.")
+            except Exception as e:
+                self.logger.error(f"Cleanup error: {e}")
+        self.mcp_servers.clear()
        
     def get_mcp_servers(self):
            if self.mcp_servers:
