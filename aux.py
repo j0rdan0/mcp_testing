@@ -3,6 +3,8 @@
 from argparse import ArgumentParser
 import tempfile
 import sys
+import logfire
+import os
 
 def print_banner():
     RED = "\033[31m"
@@ -29,6 +31,7 @@ def print_banner():
 def parse_args():
     parser = ArgumentParser(prog="PinkAI Agent",description="Simple GPT Agent with MCP server enhancement options")
     parser.add_argument("-e","--enhanced",type=bool,help="enable MCP Servers")
+    parser.add_argument("-t","--trace",type=bool,help="enable Logfire tracing")
     args = parser.parse_args()
     return args
 
@@ -37,3 +40,6 @@ def get_tempdir():
         return "/tmp"
     # on rest of OSes it behaves fine
     return tempfile.gettempdir()
+def enable_tracing():
+    logfire.configure(token=os.environ["LOGFIRE_TOKEN"],console=False)
+    logfire.instrument_openai_agents()

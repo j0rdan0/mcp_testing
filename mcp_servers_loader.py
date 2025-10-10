@@ -7,6 +7,7 @@ import os
 
 config_file = "mcp-servers.json"
 logger = logging.Logger(__name__)
+TIMEOUT = 15
 
 def load_config():
     mcp_servers  = [] # list of MCPServerStdio
@@ -26,7 +27,7 @@ def load_config():
                 if isinstance(value,str) and value.startswith('${') and value.endswith('}'):
                     env_var = value[2:-1]
                     env_vars[key] = os.environ.get(env_var, value)
-        mcp_server = MCPServerStdio(name=config["name"],params=config["params"],cache_tools_list=True,client_session_timeout_seconds=10)
+        mcp_server = MCPServerStdio(name=config["name"],params=config["params"],cache_tools_list=True,client_session_timeout_seconds=TIMEOUT)
         mcp_servers.append(mcp_server)
     return mcp_servers
 
