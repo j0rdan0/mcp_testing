@@ -1,0 +1,1 @@
+Basic ChatGPT cli tool, enhanced with MCP tools.
