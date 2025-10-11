@@ -6,7 +6,8 @@ import os
 import logging
 import asyncio
 import time
-from aux import get_tempdir,system_prompt
+from aux import get_tempdir,system_prompt_triage_agent,system_prompt_mcp_agent
+from agents.model_settings import ModelSettings
 
 
 class PinkAgent:
@@ -22,7 +23,8 @@ class PinkAgent:
         # main agent you interact with 
         self.triage_agent = Agent(
             name="Triage Agent",
-            instructions= system_prompt,
+            instructions= system_prompt_triage_agent,
+            model_settings=ModelSettings(tool_choice="required"),
             handoffs=[],
         )
     # create session only when chat is sent
@@ -49,10 +51,10 @@ class PinkAgent:
         if not self.mcp_agent:
             self.mcp_agent = Agent(
             name="MCP Enhanced Agent",
-            instructions='''You an assistance that has access to various MCP Servers you can use to help the use with his queries. Always first check to see if you
-            can gather information needed from a tool rather than responding directly''',
+            instructions=system_prompt_mcp_agent,
             handoff_description="MCP Enhanced Agent",
-            mcp_servers=self.mcp_servers
+            mcp_servers=self.mcp_servers,
+            model_settings=ModelSettings(tool_choice="required")
             )
             self.triage_agent.handoffs = [self.mcp_agent]
         else:

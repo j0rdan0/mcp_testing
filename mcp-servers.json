@@ -12,15 +12,16 @@
                     "mcp-filesystem",
                     "/projects"
                 ]
-
-            }
+            },
+            "type":"stdio"
         },
         {
             "name":"Time MCP Server",
             "params": {
                 "command": "uvx",
                 "args":["mcp-server-time"] 
-            }
+            },
+            "type":"stdio"
         },
          {
             "name":"GitHub MCP Server",
@@ -28,7 +29,41 @@
                 "command": "/Users/j0rdan0/mcp-servers/github-mcp-server/main",
                 "args":["stdio"],
                 "env": {"GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"} 
-            }
+            },
+            "type":"stdio"
+        },
+        {
+            "name":"Azure MCP Server",
+            "params": {
+                "command": "npx",
+                "args": [
+                    "@azure/mcp@latest",
+                    "server",
+                    "start"
+                    ]
+            },
+            "type":"stdio"
+
+        },
+        {
+            "name":"ForeverVM MCP Server",
+            "params": {
+                "command": "node",
+                "args": [  
+                    "/Users/j0rdan0/src/forevervm/javascript/mcp-server/build/index.js",   
+                    "run"
+                    ]
+            },
+            "type":"stdio"
+
+        },
+        {
+            "name":"DeepWiki MCP Server by Devin",
+            "params": {
+                "url": "https://mcp.deepwiki.com/mcp"
+            },
+            "type":"http"
+
         }
     ]
 }

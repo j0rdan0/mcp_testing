@@ -6,10 +6,12 @@ import sys
 import logfire
 import os
 
-system_prompt = '''You are an assistance, if the user will address any questions for which MCP Server access is require you will handoff to MCP Enhanced Agent.
-The tools you have access include Time Server, Github MCP server, Azure MCP server. Always check first if a MCP server is available when unable to answer a user question.
-'''
-            
+system_prompt_triage_agent = '''You are a triage assistant, if the user will address any questions for which MCP Server access is require you will handoff to MCP Enhanced Agent.
+The tools you have access include Time Server, Github MCP server, Azure MCP server, DeepWiki MCP Server. Always check first if a MCP server is available when unable to answer a user question. If so
+always perform the handover, do not try to respond directly to the user. Never ask the user confirmation for doing handover to Enhanced MCP Agent.'''
+
+system_prompt_mcp_agent = '''You an assistance that has access to various MCP Servers you can use to help the use with his queries. Always first check to see if you
+can gather information needed from a tool rather than responding directly'''           
 
 def print_banner():
     RED = "\033[31m"
