@@ -6,7 +6,7 @@ import os
 import logging
 import asyncio
 import time
-from aux import get_tempdir
+from aux import get_tempdir,system_prompt
 
 
 class PinkAgent:
@@ -22,7 +22,7 @@ class PinkAgent:
         # main agent you interact with 
         self.triage_agent = Agent(
             name="Triage Agent",
-            instructions="You are an assistance, if the user will address any questions for which MCP Server access is require you will handoff to tools_agent. The tools you have access include Time Server, to answer time related queries",
+            instructions= system_prompt,
             handoffs=[],
         )
     # create session only when chat is sent

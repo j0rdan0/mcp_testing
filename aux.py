@@ -6,6 +6,11 @@ import sys
 import logfire
 import os
 
+system_prompt = '''You are an assistance, if the user will address any questions for which MCP Server access is require you will handoff to MCP Enhanced Agent.
+The tools you have access include Time Server, Github MCP server, Azure MCP server. Always check first if a MCP server is available when unable to answer a user question.
+'''
+            
+
 def print_banner():
     RED = "\033[31m"
     CYAN = "\033[36m"
